@@ -1,0 +1,56 @@
+reload() {
+    . ~/.profile
+}
+
+resolve-git-root() {
+    GIT_ROOT=$(git rev-parse --show-toplevel 2> /dev/null)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+    echo $GIT_ROOT
+    return 0
+}
+
+resolve-git-path() {
+    GIT_PATH=$(git rev-parse --show-prefix 2> /dev/null)
+    if [[ $? -ne 0 ]]; then
+        return 1
+    fi
+    echo $GIT_PATH
+    return 0
+}
+
+search() {
+    SEARCH_TERM=$1
+    SEARCH_PATH=$(resolve-git-path)
+    if [[ $? -ne 0 ]]; then
+        echo "Must be run in a Git working directory"
+        return
+    fi
+    shift 1
+    search-git "$SEARCH_TERM" "$SEARCH_PATH" $@
+}
+
+search-sys() {
+    SEARCH_TERM=$1
+    shift 1
+    search-git "$SEARCH_TERM" "sys" $@ | grep -v "sys/arch"
+}
+
+search-arch() {
+    SEARCH_TERM=$1
+    shift 1
+    search-git "$SEARCH_TERM" "sys/arch" $@
+}
+
+search-git() {
+    GIT_ROOT=$(resolve-git-root)
+    if [[ $? -ne 0 ]]; then
+        echo "Must be run in a Git working directory"
+        return
+    fi
+    SEARCH_TERM=$1
+    SEARCH_PATH=$2
+    shift 2
+    grep -R -e "$SEARCH_TERM" "$GIT_ROOT/$SEARCH_PATH" $@
+}
